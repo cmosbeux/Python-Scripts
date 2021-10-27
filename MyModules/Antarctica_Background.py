@@ -4,25 +4,35 @@
 Created on Sat May 11 08:42:22 2019
 
 @author: cmosbeux
+
+Description:
+------------
+This file contains various functions to plot Antarctic maps
+with grounding lines, observed velocities, continental shelf line, a scale,...
+
+The main function is Plot_Antarctica that can be called as follow:
+ax = Plot_Antarctica(args)
+
+You can then apply some extra work to the ax by calling it ax[i], where i is
+the axe index (e.g., i=0 if only one subplot, i=0,1 if two subplots, ...).
 """
 
 import numpy as np
-import cartopy.io.shapereader as shpreader
-import matplotlib.colors as mcolors
-from matplotlib.colors import colorConverter
-import matplotlib as mp
 import matplotlib.pyplot as plt
 import shapefile
 from imageio import imread
 from mpl_toolkits.axes_grid1 import AxesGrid
-import os
-import matplotlib.cm as cm
-import matplotlib
 import csv
+import os
+
+#get current directory
+dirname = os.path.dirname(__file__)
+#%%
 
 def plot_GL(ax, color='black', lw=0.5, icefront=True, precision=1,zorder=1000000):
-    shape_name=os.path.expanduser('../MyModuleData/GL/scripps_antarctica_polygons_v1.shp')    
-    shp = shapefile.Reader(shape_name)
+    path = 'MyModuleData/GL/scripps_antarctica_polygons_v1.shp'  
+    src_file = os.path.join(dirname, path)
+    shp = shapefile.Reader(src_file)
     k=0
     for shape in shp.shapeRecords():
         if 'shelf' not in shape.record[1]:
@@ -42,7 +52,7 @@ def plot_GL(ax, color='black', lw=0.5, icefront=True, precision=1,zorder=1000000
                     
 
 def save_GL2021(color='black', lw=0.5, icefront=True, precision=1,zorder=1000000):
-    shape_name=os.path.expanduser('../GL/scripps_antarctica_polygons_v1.shp')    
+    shape_name=os.path.expanduser('MyModuleData/GL/scripps_antarctica_polygons_v1.shp')    
     shp = shapefile.Reader(shape_name)
     k=0
     x_save,y_save = [],[]
@@ -69,14 +79,17 @@ def save_GL2021(color='black', lw=0.5, icefront=True, precision=1,zorder=1000000
             
               
 def plot_continental_shelf(ax, color='dimgrey', lw=0.5, precision=1,zorder=1000000):
-    A = np.load('../MyModuleData/BATHY/Bathymetry_contours/contour_1500m_simple.npy')
+    path = 'MyModuleData/BATHY/Bathymetry_contours/contour_1500m_simple.npy'
+    src_file = os.path.join(dirname, path)
+    A = np.load(src_file)
     x, y = A[0], A[1]
     ax.plot(x,y, color=color, lw=lw)
 
 
-
 def plot_continental_shelf2(ax, color='darkgrey', lw=0.0, precision=1,zorder=1000000):
-    with open('../MyModuleData/BATHY/Bathymetry_contours/contour_1500m_simple.npy') as csvfile:
+    path = 'MyModuleData/BATHY/Bathymetry_contours/contour_1500m_simple.npy'
+    src_file = os.path.join(dirname, path)
+    with open(src_file) as csvfile:
         reader = csv.reader(csvfile, delimiter = '\n')
         x, y = [], []
         for row in reader:
@@ -85,39 +98,55 @@ def plot_continental_shelf2(ax, color='darkgrey', lw=0.0, precision=1,zorder=100
             y.append(float(xy[1]))
     ax.scatter(x[::precision],y[::precision],c=color, s=0.5,linewidth=lw, zorder=zorder)
  
+    
+ 
+    
+ 
 #%% 
         
 def plot_front(ax, color='black', lw=1, zorder=1000000):
     try:
-        x,y = np.load( os.path.expanduser('../MyModuleData/ICE_FRONT/ice_front_antarctica_xy.npy'))
+        path = 'MyModuleData/ICE_FRONT/ice_front_antarctica_xy.npy'
+        src_file = os.path.join(dirname, path)
+        x,y = np.load(src_file)
     except IOError:
         print('Error', 'numpy file does not exist... creating it!')
         try:
             from SouthPolar_Coordinates import ll2psxy
             xx, yy = [], []
-            with open(os.path.expanduser('../MyModuleData/ICE_FRONT/ice_front_antarctica_lat_lon.txt')) as f:
+            path = 'MyModuleData/ICE_FRONT/ice_front_antarctica_lat_lon.txt'
+            src_file = os.path.join(dirname, path)
+            with open(src_file) as f:
                 for line in f:
                     if '#' in line or line == '\n':
                         continue
                     else:
-                        d = line.split('\t')
+                        d = line.split()
                         try:
                             lat, lon = float(d[0]), float(d[1]) 
+                            x, y = ll2psxy(lat,lon)
+                            xx.append(x), yy.append(y)
                         except ValueError:
-                            print(d)
-                        x, y = ll2psxy(lat,lon)
-                        xx.append(x), yy.append(y)
+                            None
+                        except IndexError:
+                            None
                 xx, yy = np.asarray(xx), np.asarray(yy)
                 A = np.array([xx,yy])
-                np.save('ICE_FRONT/ice_front_antarctica_xy', A) 
+                path = 'MyModuleData/ICE_FRONT/ice_front_antarctica_xy'
+                src_file = os.path.join(dirname, path)
+                np.save(src_file, A) 
+                
         except IOError:
             print('Error', 'source txt file does not exist... check sources and path.')
-    ax.plot(x,y, color=color, linewidth=lw, zorder=zorder)   
 
+    ax.scatter(x,y, color = 'k', s=0.5, zorder=zorder)   
+    return x,y
 
 def velocity_background(ax, color='white'):         
     np.random.seed(0)
-    img = imread(os.path.expanduser('../MyModuleData//IMAGE/RIS_veloctiy_background.png'))
+    path = 'MyModuleData/IMAGE/RIS_veloctiy_background.png'
+    src_file = os.path.join(dirname, path)
+    img = imread(src_file)
     left=-1246954.0
     right=1503412.63317
     top=273093.6875
@@ -127,7 +156,9 @@ def velocity_background(ax, color='white'):
     
 def basemap_velocity(ax, cmap = 'Greys_r', norm = None, mask_null = False,alpha=0.5,zorder=0):         
     np.random.seed(0)
-    img = imread(os.path.expanduser('../MyModuleData/IMAGE/Antarctica_velocity_basemap_grey.png'))
+    path = './MyModuleData/IMAGE/Antarctica_velocity_basemap_grey.png'
+    src_file = os.path.join(dirname, path)
+    img = imread(src_file)
     if mask_null:
         img = np.ma.masked_array(img, mask=img==255)
     left =   -2811000.0
@@ -140,9 +171,11 @@ def basemap_velocity(ax, cmap = 'Greys_r', norm = None, mask_null = False,alpha=
         ax.imshow(img,  extent=[left, right, bottom, top], interpolation = 'bicubic', cmap = cmap,  norm=norm, alpha=alpha, zorder=zorder)
         
         
-def basemap_LIMA(ax, color='white', cmap = 'Greys_r'):         
+def basemap_LIMA(ax, color='white', cmap = 'Greys_r'):  
     np.random.seed(0)
-    img = imread(os.path.expanduser('../MyModuleData/IMAGE/Antarctica_MOSAIC_basemap_grey.png'))
+    path = './MyModuleData/IMAGE/Antarctica_MOSAIC_basemap_grey.png'
+    src_file = os.path.join(dirname, path)       
+    img = imread(src_file)
     left =   -2811000.0
     right =  +2899500.0
     top =    +2767500.0
@@ -168,7 +201,9 @@ def cbar(fig, mappable, ticks=None, tickslabel=None, orientation='horizontal'):
 
 
 def Plot_Antarctica(nrows=1, ncols=1, GL=True, icefront=True, continental_shelf=0, precision=1, basemap=None, extent=[-3333000, 3333000, -3333000, 3333000], cbar=None, axes_pad=0.1, figsize=(20,20)):
-    """Extent should be given: (xmin, xmax, ymin, ymax)"""
+    """Extent should be given: (xmin, xmax, ymin, ymax)
+       a basemap ca be choosen: dark, light, or blue.
+    """
     
     xmin, xmax, ymin, ymax = extent
     fig = plt.figure(figsize=figsize)
@@ -298,6 +333,22 @@ def Plot_Antarctica2(nrows=1, ncols=1, GL=True, icefront=True, continental_shelf
     return fig, ax
 
 
+def scale(ax, length=100):
+    """ Plot a scale on a map (default scale is 100 km)"""
+    #scale
+    l = length*1e3
+    ll = '%d km' % length
+    x = ax.get_xbound()[0]
+    y = ax.get_ybound()[0]
+    y = y + abs(y)*0.05
+    delta = abs(x)*0.05
+    x = x+delta
+    xx = [x, x+l]
+    
+    ax.plot(xx, [y,y], c = 'black', zorder = 1e12)
+    ax.text(x+l/2, y+l/4, s=ll, ha='center', color='black', fontweight='medium', fontsize=11, zorder = 1e12)
+
+
 class basin:
     """extent of different basins"""
     @staticmethod
@@ -307,6 +358,9 @@ class basin:
     def PanAntarctic():
         #xmin, xmax, ymin, ymax
         return [-3.0e6,3e6,-3e6,3e6]
+    def Amundsen():
+        #xmin, xmax, ymin, ymax
+        return [-2e6,-1e6,-9e5,1e5]
         
     
    
