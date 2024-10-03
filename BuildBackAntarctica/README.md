@@ -31,3 +31,39 @@ To run the script, ensure you have the required files and modules, then execute:
 
 ```bash
 python Antarctic_Geometry.py
+```
+
+## Functions
+
+Build_IceSat2_ContinuousMap(x_final=None, y_final=None, masked=False)
+Reads dHdT from IceSat1-2 over the shelves and builds a continuous map.
+
+### Parameters
+
+- `x_final`: Final x-coordinates (default: None).
+- `y_final`: Final y-coordinates (default: None).
+- `masked`: Boolean to apply masking (default: False).
+
+### Example
+
+```python
+Build_IceSat2_ContinuousMap(x_final=some_x, y_final=some_y, masked=True)
+```
+
+## Dependencies
+
+- `numpy`
+- `matplotlib`
+- `scipy`
+- `h5py`
+- `Antarctica_Background`(custom module available in MyModules)
+- `format_reading`(custom module available in MyModules)
+- `FunctionsDataPlot` (custom module in the same folder as `Antarctic_Geometry.py`)
+
+## Author
+
+- **cmosbeux**
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
