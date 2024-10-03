@@ -8,6 +8,9 @@ This script reconstructs the ice sheet as it was back in time based on current g
 - **Topography file**: Contains ice thickness and bedrock geometry (e.g., `BedMachineAntarctica-v03.nc`).
 - **dhdt files**: For the shelves and the ice sheet, using dhdt observations from IceSat1-2 missions over 2003-2019.
 
+> **⚠️ Warning:**
+> Make sure to have the correct path for the different data files. The paths are hard-coded into the Python script.
+
 ## Potential Requirements
 
 - **Path to data**: Paths are hard-coded for the author's system. You should define the filenames in the different functions.
