@@ -280,6 +280,7 @@ bedrock_2020 = bed
 #%%
 thickness_targetyear[thickness_targetyear<10]=10.
 thickness_targetyear[thickness_targetyear<10]=10.
+
 #%% Get grounding lines for target year and 2020
 GL = True
 if GL:
@@ -293,11 +294,6 @@ else:
 #%%
 from Antarctica_Background import Plot_Antarctica, basin, scale, plot_front, basemap_LIMA_AMU
 
-# params = {"ytick.color" : "w",
-#           "xtick.color" : "w",
-#           "axes.labelcolor" : "w",
-#           "axes.edgecolor" : "w"}
-# plt.rcParams.update(params)
 
 if plot:
     extent = np.asarray(basin.PanAntarctic())
@@ -312,12 +308,9 @@ if plot:
     cbaxes = fig.add_axes([0.33, 0.35, 0.12, 0.013]) 
     cbar = fig.colorbar(cb, cax=cbaxes, ticks=[-10,0,10],orientation='horizontal')
     cbar.set_label('ice thickness rate of change', fontsize=16)
-    cbar.ax.set_xticklabels(['-10', '0', r'   10 m a$^{-1}$'], fontsize=13)
-    
+    cbar.ax.set_xticklabels(['-10', '0', r'   10 m a$^{-1}$'], fontsize=13)   
     ax[0].axis('off')
-    # ax[0].plot([extent[0]+5.4e5, extent[1]], [extent[2]]*2, c='k')
-    # ax[0].plot([extent[0]+2.5e5, extent[1]], [extent[3]]*2, c='k')
-    # ax[0].plot([extent[1]]*2, [-1.365e6, extent[-1]], c='k')
+
     plot_GL_MEASURES(ax[0], '1996', color = 'green', lw = 0.3, zorder = 1e5)
     
     plt.savefig(f'Figures/Antarctica_dHdt_GL{targetyear}.pdf', bbox_inches='tight', pad_inches=0.1, transparent = True)
