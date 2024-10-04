@@ -4,17 +4,6 @@
 Created on Sat May 11 08:42:22 2019
 
 @author: cmosbeux
-
-Description:
-------------
-This file contains various functions to plot Antarctic maps
-with grounding lines, observed velocities, continental shelf line, a scale,...
-
-The main function is Plot_Antarctica that can be called as follow:
-ax = Plot_Antarctica(args)
-
-You can then apply some extra work to the ax by calling it ax[i], where i is
-the axe index (e.g., i=0 if only one subplot, i=0,1 if two subplots, ...).
 """
 
 import numpy as np
@@ -24,18 +13,48 @@ from imageio import imread
 from mpl_toolkits.axes_grid1 import AxesGrid
 import csv
 import os
+from SouthPolar_Coordinates import ll2psxy
+from format_reading import netcdf
+from scipy.interpolate import RegularGridInterpolator
 
 #get current directory
 dirname = os.path.dirname(__file__)
 #%%
 
-def plot_GL(ax, color='black', lw=0.5, icefront=True, precision=1,zorder=1000000):
+def plot_GL_MEASURES(ax, year, color='black',lw=0.5, zorder=1e6):
+    shp = shapefile.Reader("/Users/cmosbeux/Documents/Data_Antarctica.CLEAN/GroundingLines/MEASURES/InSAR_GL_Antarctica_v02.shp")
+    for shape in shp.shapeRecords():
+        if '1996' in shape.record[2]:
+            xy = [i for i in shape.shape.points[:]]
+            x,y = zip(*[ll2psxy(j[1],j[0]) for j in xy])
+            #remove connexion if points are very far (not the same GL), display by part
+            parts = shape.shape.parts
+            for i in range(len(parts)-1):
+                ax.plot(x[parts[i]:parts[i+1]],y[parts[i]:parts[i+1]], color=color, linewidth=lw, zorder=zorder)
+
+def plot_GL_MEASURES_multi_year(ax, year, color='black',lw=0.5, zorder=1e6, label=None):
+    shp = shapefile.Reader("/Users/cmosbeux/Documents/Data_Antarctica.CLEAN/GroundingLines/MEASURES/InSAR_GL_Antarctica_v02.shp")
+    for shape in shp.shapeRecords():
+        if year in shape.record[2]:
+            xy = [i for i in shape.shape.points[:]]
+            x,y = zip(*[ll2psxy(j[1],j[0]) for j in xy])
+            #remove connexion if points are very far (not the same GL), display by part
+            parts = shape.shape.parts
+            for i in range(len(parts)-1):
+                ax.plot(x[parts[i]:parts[i+1]],y[parts[i]:parts[i+1]], color=color, linewidth=lw, zorder=zorder)
+    else:
+        print('Year %s does not exist in the MEASURES GL data base...' %year)
+                
+
+def plot_GL(ax, color='black', lw=0.5, GL=True, icefront=True, precision=1,zorder=1000000):
     path = 'MyModuleData/GL/scripps_antarctica_polygons_v1.shp'  
     src_file = os.path.join(dirname, path)
     shp = shapefile.Reader(src_file)
     k=0
+    print('Plotting Grounding Line: ', GL)
+    print('Plotting Ice Front: ', icefront)
     for shape in shp.shapeRecords():
-        if 'shelf' not in shape.record[1]:
+        if 'shelf' not in shape.record[1] and GL:
             xy = [i for i in shape.shape.points[:]]
             x,y = zip(*[(j[0],j[1]) for j in xy])
             ax.plot(x,y, color=color, linewidth=lw, zorder=zorder)
@@ -97,10 +116,7 @@ def plot_continental_shelf2(ax, color='darkgrey', lw=0.0, precision=1,zorder=100
             x.append(float(xy[0]))
             y.append(float(xy[1]))
     ax.scatter(x[::precision],y[::precision],c=color, s=0.5,linewidth=lw, zorder=zorder)
- 
-    
- 
-    
+     
  
 #%% 
         
@@ -142,6 +158,7 @@ def plot_front(ax, color='black', lw=1, zorder=1000000):
     ax.scatter(x,y, color = 'k', s=0.5, zorder=zorder)   
     return x,y
 
+
 def velocity_background(ax, color='white'):         
     np.random.seed(0)
     path = 'MyModuleData/IMAGE/RIS_veloctiy_background.png'
@@ -181,14 +198,121 @@ def basemap_LIMA(ax, color='white', cmap = 'Greys_r'):
     top =    +2767500.0
     bottom = -2345500.0
     ax.imshow(img,  extent=[left, right, bottom, top], interpolation = 'bicubic', cmap = cmap,  alpha=1, zorder=0)
+
+
+import rasterio
+import matplotlib.cm as cm
+from MyColobars import alpha_cmap
+
+
+def basemap_LIMA_AMU(ax,d=5):   
+    main_dir = '/Users/cmosbeux/Documents/Data_Antarctica.CLEAN/Images/LIMA/'
+    tiff_info = []
+    tiff_image = []
+    for sub_dir in os.listdir(main_dir):
+        if sub_dir == '.DS_Store':
+            continue
+        print('loading %s...' % sub_dir)
+        path = '/'.join([main_dir,sub_dir])
+        for file in os.listdir(path):
+            if file.endswith('.tif'):
+                path2file = path+'/'+file
+                dataset = rasterio.open(path2file)
+                tiff_info.append(dataset)
+                tiff_image.append(imread(path2file))
+
+    background = True
+    if background:
+        for dinfo, dimage in zip(tiff_info,tiff_image):
+            extent = dinfo.bounds[0], dinfo.bounds[2],dinfo.bounds[1], dinfo.bounds[3]
+            ax.imshow(dimage[::d,::d,:], extent=extent)     
+    print('LIMA Loading Finished.')
+
+
+def basemap_LIMA_AMU_load(d=5):   
+    main_dir = '/Users/cmosbeux/Documents/Data_Antarctica.CLEAN/Images/LIMA/'
+    tiff_info = []
+    tiff_image = []
+    for sub_dir in os.listdir(main_dir):
+        if sub_dir == '.DS_Store':
+            continue
+        print('loading %s...' % sub_dir)
+        path = '/'.join([main_dir,sub_dir])
+        for file in os.listdir(path):
+            if file.endswith('.tif'):
+                path2file = path+'/'+file
+                dataset = rasterio.open(path2file)
+                tiff_info.append(dataset)
+                tiff_image.append(imread(path2file))
+    print('LIMA Loading Finished.')
+    return tiff_info,tiff_image
+
+
+def basemap_LIMA_AMU_plot(ax, tiff_info,tiff_image, d=5):
+    background = True
+    if background:
+        for dinfo, dimage in zip(tiff_info,tiff_image):
+            extent = dinfo.bounds[0], dinfo.bounds[2],dinfo.bounds[1], dinfo.bounds[3]
+            ax.imshow(dimage[::d,::d,:], extent=extent)    
+            
+def save_LIMA_AMU_png(dpi):
+    plt.close()
+    tiff_info,tiff_image = basemap_LIMA_AMU_load(d=1)
+    fig, ax = plt.subplots()
+    basemap_LIMA_AMU_plot(ax, tiff_info,tiff_image, d=1)
+    ax.set_xbound(-2e6, 0.5e6)
+    xmin, xmax, ymin, ymax = -2e6,-1.2e6,-9e5,0
+    ax.set_xbound(xmin,xmax)
+    ax.set_ybound(ymin,ymax)
+    ax.set_axis_off()
+    plt.savefig(f'MyModuleData/IMAGE/LIMA_AMU_{dpi}.png', dpi=dpi, bbox_inches='tight', pad_inches=0)
+    plt.close()
     
 
-def colorbar(mappable):
+def plot_LIMA_AMU_png(ax, dpi=800, zorder = 0):
+    np.random.seed(0)
+    path = f'/Users/cmosbeux/Documents/PyDev3/MyModules/MyModuleData/IMAGE/LIMA_AMU_{dpi}.png'
+    file_exists = os.path.exists(path)
+    if not file_exists:
+        print(f'LIMA not availabel at {dpi} dpi... rebuilding it!')
+        save_LIMA_AMU_png(dpi)
+    src_file = os.path.join(dirname, path)       
+    img = imread(src_file)
+    left =   -2e6
+    right = -1.2e6
+    top =    0
+    bottom = -9e5
+    ax.imshow(img,  extent=[left, right, bottom, top], interpolation = 'bilinear',  alpha=1, zorder=0)
+
+
+def ice_mask(x_new,y_new, d=1):
+    #use  bedmap but could be something else
+    x, y, vx = netcdf.readgrid('/Users/cmosbeux/Documents/Data_Antarctica.CLEAN/DEMs&dHdT/bedmap2.nc', 'surface')
+    
+    print("Interpolating mask on new grid ...")
+    x_grid, y_grid = np.mgrid[y.min():y.max():1000, x.min():y.max()+1:1000]
+    x_grid, y_grid = x_grid[::d,::d], y_grid[::d,::d]
+    ice_mask = vx.mask[::d,::d]
+    
+    #make the interpolator
+    print("\t -Setting up the RegularGridInterpolator... ", end='') 
+    interpolator = RegularGridInterpolator((x[::d], y[::d]), ice_mask[::-1,:])
+    
+    #interpolation
+    points = list(zip(x_new.flatten(), y_new.flatten()))
+    new_mask = interpolator(points)
+    new_mask = new_mask.reshape(x_new.shape)
+    new_mask = new_mask[:,:]
+    print("Done.")
+    return new_mask
+
+
+def colorbar(mappable, vertical_size_percentage=1):
     from mpl_toolkits.axes_grid1 import make_axes_locatable
     ax = mappable.axes
     fig = ax.figure
     divider = make_axes_locatable(ax)
-    cax = divider.append_axes("right", size="5%", pad=0.05)
+    cax = divider.append_axes("right", size="5%", pad=0.05, aspect=vertical_size_percentage)
     return fig.colorbar(mappable, cax=cax)
 
 
@@ -202,8 +326,7 @@ def cbar(fig, mappable, ticks=None, tickslabel=None, orientation='horizontal'):
 
 def Plot_Antarctica(nrows=1, ncols=1, GL=True, icefront=True, continental_shelf=0, precision=1, basemap=None, extent=[-3333000, 3333000, -3333000, 3333000], cbar=None, axes_pad=0.1, figsize=(20,20)):
     """Extent should be given: (xmin, xmax, ymin, ymax)
-       a basemap ca be choosen: dark, light, or blue.
-    """
+    Velocity basemaps : dark, light, blue"""
     
     xmin, xmax, ymin, ymax = extent
     fig = plt.figure(figsize=figsize)
@@ -240,14 +363,24 @@ def Plot_Antarctica(nrows=1, ncols=1, GL=True, icefront=True, continental_shelf=
     for ax in grid:
         ax.set_xticks([]), ax.set_xticklabels([])
         ax.set_yticks([]), ax.set_yticklabels([])
-        if GL:
-            if isinstance(GL,int):
-                plot_GL(ax, icefront=icefront, lw = GL, precision = precision)
-            else:
-                #default GL linewidth = 0.5
-                plot_GL(ax, icefront=icefront, precision = precision)
-            #plot continental shelf
-            plot_continental_shelf(ax, lw=continental_shelf)
+        
+        if isinstance(GL, bool) or isinstance(icefront, bool):
+            #default linewidth
+            plot_GL(ax, GL = GL, icefront = icefront, lw = 1, precision = precision)
+        elif GL and not icefront:
+            print('GL but not front')
+            plot_GL(ax, GL = True, icefront=False, lw = GL, precision = precision)
+        elif icefront and not GL:
+            print('icefront but not GL')
+            plot_GL(ax, GL = False, icefront=True, lw = icefront, precision = precision)
+        else:
+            #default GL linewidth = 0.5
+            print('default')
+            plot_GL(ax, icefront=icefront, precision = precision)
+            
+        #plot continental shelf
+        plot_continental_shelf(ax, lw=continental_shelf)
+        
         ax.set_xlim(xmin,xmax)
         ax.set_ylim(ymin,ymax)
         if basemap == 'dark':
@@ -333,8 +466,7 @@ def Plot_Antarctica2(nrows=1, ncols=1, GL=True, icefront=True, continental_shelf
     return fig, ax
 
 
-def scale(ax, length=100):
-    """ Plot a scale on a map (default scale is 100 km)"""
+def scale(ax, length=100, color='black'):
     #scale
     l = length*1e3
     ll = '%d km' % length
@@ -345,8 +477,8 @@ def scale(ax, length=100):
     x = x+delta
     xx = [x, x+l]
     
-    ax.plot(xx, [y,y], c = 'black', zorder = 1e12)
-    ax.text(x+l/2, y+l/4, s=ll, ha='center', color='black', fontweight='medium', fontsize=11, zorder = 1e12)
+    ax.plot(xx, [y,y], c = color, zorder = 1e12)
+    ax.text(x+l/2, y+l/4, s=ll, ha='center', color=color, fontweight='medium', fontsize=11, zorder = 1e12)
 
 
 class basin:
