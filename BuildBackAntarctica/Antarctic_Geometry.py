@@ -194,15 +194,12 @@ def get_GL(x, y, gmask):
                 x_gl.append(x[j])
                 y_gl.append(y[i])
         old_i = 0
-        # if int((i/n+1e-2)*100) != old_i:
-        #     sys.stdout.write('\r')
-        #     sys.stdout.flush()
-        #     # the exact output you're looking for:
-        #     #sys.stdout.write("[%-20s] %d%%" % ('='*int(i/n*20+1), (i/n+1e-2)*100))
-        #     sys.stdout.write(" [%d%%]" % ((i/n+1e-2)*100))
-        #     old_i = int((i/n+1e-2)*100)
-        #     #sys.stdout.write("[{:{}}] {:.1f}%".format("="*i, n-1, (100/(n-1)*i)))
-        #     sys.stdout.flush()
+        if int((i/n+1e-2)*100) != old_i:
+            sys.stdout.write('\r')
+            sys.stdout.flush()
+            sys.stdout.write(" [%d%%]" % ((i/n+1e-2)*100))
+            old_i = int((i/n+1e-2)*100)
+            sys.stdout.flush()
     print('\n')
     return x_gl, y_gl
 
