@@ -288,9 +288,8 @@ if GL:
 else:
     x_gl_2020, y_gl_2020 = np.loadtxt('2020_State/GL_2020.txt')
     x_gl_targetyear, y_gl_targetyear = np.loadtxt(f'{targetyear}_State/GL_{targetyear}.txt')
-#%%
-from Antarctica_Background import Plot_Antarctica, basin, scale, plot_front, basemap_LIMA_AMU
 
+#%%
 
 if plot:
     extent = np.asarray(basin.PanAntarctic())
