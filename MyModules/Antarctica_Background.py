@@ -46,13 +46,14 @@ def plot_GL_MEASURES_multi_year(ax, year, color='black',lw=0.5, zorder=1e6, labe
         print('Year %s does not exist in the MEASURES GL data base...' %year)
                 
 
-def plot_GL(ax, color='black', lw=0.5, GL=True, icefront=True, precision=1,zorder=1000000):
+def plot_GL(ax, color='black', lw=0.5, GL=True, icefront=True, precision=1,zorder=1000000, info=True):
     path = 'MyModuleData/GL/scripps_antarctica_polygons_v1.shp'  
     src_file = os.path.join(dirname, path)
     shp = shapefile.Reader(src_file)
     k=0
-    print('Plotting Grounding Line: ', GL)
-    print('Plotting Ice Front: ', icefront)
+    if info:
+        print('Plotting Grounding Line: ', GL)
+        print('Plotting Ice Front: ', icefront)
     for shape in shp.shapeRecords():
         if 'shelf' not in shape.record[1] and GL:
             xy = [i for i in shape.shape.points[:]]
@@ -324,7 +325,7 @@ def cbar(fig, mappable, ticks=None, tickslabel=None, orientation='horizontal'):
     return  cbar
 
 
-def Plot_Antarctica(nrows=1, ncols=1, GL=True, icefront=True, continental_shelf=0, precision=1, basemap=None, extent=[-3333000, 3333000, -3333000, 3333000], cbar=None, axes_pad=0.1, figsize=(20,20)):
+def Plot_Antarctica(nrows=1, ncols=1, GL=True, icefront=True, continental_shelf=0, precision=1, basemap=None, extent=[-3333000, 3333000, -3333000, 3333000], cbar=None, axes_pad=0.1, figsize=(20,20), GLinfo=True):
     """Extent should be given: (xmin, xmax, ymin, ymax)
     Velocity basemaps : dark, light, blue"""
     
@@ -366,17 +367,17 @@ def Plot_Antarctica(nrows=1, ncols=1, GL=True, icefront=True, continental_shelf=
         
         if isinstance(GL, bool) or isinstance(icefront, bool):
             #default linewidth
-            plot_GL(ax, GL = GL, icefront = icefront, lw = 1, precision = precision)
+            plot_GL(ax, GL = GL, icefront = icefront, lw = 1, precision = precision,  info=GLinfo)
         elif GL and not icefront:
             print('GL but not front')
-            plot_GL(ax, GL = True, icefront=False, lw = GL, precision = precision)
+            plot_GL(ax, GL = True, icefront=False, lw = GL, precision = precision,  info=GLinfo)
         elif icefront and not GL:
             print('icefront but not GL')
-            plot_GL(ax, GL = False, icefront=True, lw = icefront, precision = precision)
+            plot_GL(ax, GL = False, icefront=True, lw = icefront, precision = precision,  info=GLinfo)
         else:
             #default GL linewidth = 0.5
             print('default')
-            plot_GL(ax, icefront=icefront, precision = precision)
+            plot_GL(ax, icefront=icefront, precision = precision, info=GLinfo)
             
         #plot continental shelf
         plot_continental_shelf(ax, lw=continental_shelf)
